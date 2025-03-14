@@ -1,7 +1,3 @@
-<a href="#"><img width="100%" src="https://capsule-render.vercel.app/api?type=waving&height=150&color=00FF00&text=KHANBYPASS&fontColor=000000&fontAlign=50&fontAlignY=30&fontSize=35"/></a>
-
-<a href="#"><img src="https://komarev.com/ghpvc/?username=khanbypass&style=for-the-badge&label=Visitantes:&color=ff69b4"/></a>
-
 # 🚀 KHANBYPASS - Liberte-se das limitações!  
 
 ### Criado por: [mzzvxm](https://github.com/mzzvxm)  
