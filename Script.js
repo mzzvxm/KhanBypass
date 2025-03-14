@@ -1,134 +1,217 @@
-/* Identificação do dispositivo */
-const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Windows Phone|Mobile|Tablet|Kindle|Silk|PlayBook|BB10/i.test(navigator.userAgent);
-const isAppleDevice = /iPhone|iPad|iPod|Macintosh|Mac OS X/i.test(navigator.userAgent);
-
-/* Plugins carregados */
-let pluginsAtivos = [];
-
-/* Elementos auxiliares */
-const telaInicial = document.createElement('div');
-const janelaPopup = document.createElement('div');
-
-/* Configurações principais */
-window.opcoes = {
-    alterarPerguntas: true,
-    modificarVideos: true,
-    respostaAutomatica: true,
-};
-window.parametros = {
-    atrasoResposta: 1.1,
+let device = {
+    mobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Windows Phone|Mobile|Tablet|Kindle|Silk|PlayBook|BB10/i.test(navigator.userAgent),
+    apple: /iPhone|iPad|iPod|Macintosh|Mac OS X/i.test(navigator.userAgent)
 };
 
-/* Bloqueios de inspeção */
-document.addEventListener('contextmenu', (e) => e.preventDefault());
-document.addEventListener('keydown', (e) => {
-    if (["F12", "I", "C", "U", "J"].includes(e.key) && e.ctrlKey && e.shiftKey) {
-        e.preventDefault();
-    }
-});
+let loadedPlugins = [];
 
-console.error = () => {};
+/* Elements */
+const splashScreen = document.createElement('splashScreen');
+const popup = document.createElement('div'); // Pop-up element
 
-/* Sistema de Eventos */
-class ManipuladorEventos {
+/* Globals */
+window.features = {
+    questionSpoof: true,
+    videoSpoof: true,
+    autoAnswer: true,
+};
+window.featureConfigs = {
+    autoAnswerDelay: 1.1,
+    customUsername: "CustomUsername", // Default custom username
+    customPfp: "https://example.com/custom-avatar.jpg" // Default custom profile picture
+};
+
+/* Security */
+document.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+document.addEventListener('keydown', function (e) { if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'C' || e.key === 'U' || e.key === 'J'))) e.preventDefault(); });
+
+const originalConsoleError = console.error;
+console.error = function(message, ...args) {
+    // Avoid console errors
+    return;
+};
+
+/* Emmiter */
+class EventEmitter {
     constructor() {
-        this.eventos = {};
+        this.events = {};
     }
-    ao(evento, callback) {
-        (Array.isArray(evento) ? evento : [evento]).forEach(e => {
-            this.eventos[e] = this.eventos[e] || [];
-            this.eventos[e].push(callback);
+    on(t, e) {
+        if (typeof t === 'string') {
+            t = [t];
+        }
+        t.forEach(t => {
+            if (!this.events[t]) {
+                this.events[t] = [];
+            }
+            this.events[t].push(e);
         });
     }
-    desativar(evento, callback) {
-        (Array.isArray(evento) ? evento : [evento]).forEach(e => {
-            if (this.eventos[e]) {
-                this.eventos[e] = this.eventos[e].filter(fn => fn !== callback);
+    off(t, e) {
+        if (typeof t === 'string') {
+            t = [t];
+        }
+        t.forEach(t => {
+            if (this.events[t]) {
+                this.events[t] = this.events[t].filter(t => t !== e);
             }
         });
     }
-    emitir(evento, ...args) {
-        if (this.eventos[evento]) {
-            this.eventos[evento].forEach(fn => fn(...args));
+    emit(t, ...e) {
+        if (this.events[t]) {
+            this.events[t].forEach(t => {
+                t(...e);
+            });
         }
     }
+    once(t, e) {
+        if (typeof t === 'string') {
+            t = [t];
+        }
+        let s = (...i) => {
+            e(...i);
+            this.off(t, s);
+        };
+        this.on(t, s);
+    }
 }
-const gerenciadorEventos = new ManipuladorEventos();
 
-/* Observação de mudanças no DOM */
-new MutationObserver((mutacoes) => {
-    mutacoes.forEach(m => {
-        if (m.type === 'childList') gerenciadorEventos.emitir('alteracaoDOM');
-    });
+const plppdo = new EventEmitter();
+
+new MutationObserver((mutationsList) => {
+    for (let mutation of mutationsList) {
+        if (mutation.type === 'childList') plppdo.emit('domChanged');
+    }
 }).observe(document.body, { childList: true, subtree: true });
 
-/* Funções auxiliares */
-const esperar = (ms) => new Promise(resolver => setTimeout(resolver, ms));
+/* Misc Functions */
+window.debug = function(text) { console.log(text); }; // Replace with actual debug logic
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+const findAndClickByClass = className => { 
+    const element = document.querySelector(`.${className}`); 
+    if (element) { 
+        element.click(); 
+    } 
+}
 
-async function carregarScript(url, identificador) {
+function sendToast(text, duration = 5000, gravity = 'bottom') {
+    Toastify({
+        text: text,
+        duration: duration,
+        gravity: gravity,
+        position: "center",
+        stopOnFocus: true,
+        style: { background: "#000000" }
+    }).showToast();
+    debug(text);
+};
+
+async function showSplashScreen() {
+    splashScreen.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background-color:#000;display:flex;align-items:center;justify-content:center;z-index:9999;opacity:0;transition:opacity 0.5s ease;user-select:none;color:white;font-size:30px;text-align:center;";
+    splashScreen.innerHTML = '<span style="color:white;">KHAN</span><span style="color:#32CD32;">DESTROYER</span>'; // DESTROYER na cor verde
+    document.body.appendChild(splashScreen);
+    setTimeout(() => splashScreen.style.opacity = '1', 10);
+};
+
+async function hideSplashScreen() {
+    splashScreen.style.opacity = '0';
+    setTimeout(() => splashScreen.remove(), 1000);
+};
+
+// Pop-up creation and functionality
+function showPopup() {
+    popup.style.cssText = "position:fixed;top:50%;left:50%;transform:translate(-50%, -50%);background-color:#fff;padding:20px;border-radius:10px;box-shadow:0px 0px 10px rgba(0, 0, 0, 0.5);z-index:10000;text-align:center;max-width:300px;";
+    
+    const image = document.createElement('img');
+    image.src = 'https://i.imgur.com/t4mfuJU.png';
+    image.style.width = '100px';
+    image.style.height = '100px';
+    
+    const text = document.createElement('p');
+    text.innerText = 'Games Destroyer';
+    text.style.fontSize = '18px';
+    text.style.marginTop = '10px';
+    
+    const discordButton = document.createElement('button');
+    discordButton.innerText = 'Entrar no Server';
+    discordButton.style.marginTop = '20px';
+    discordButton.style.padding = '10px';
+    discordButton.style.backgroundColor = '#7289da';
+    discordButton.style.border = 'none';
+    discordButton.style.borderRadius = '5px';
+    discordButton.style.color = 'white';
+    discordButton.onclick = () => {
+        window.open('https://discord.gg/gamesdest', '_blank');
+    };
+
+    const closeButton = document.createElement('span');
+    closeButton.innerText = 'X';
+    closeButton.style.position = 'absolute';
+    closeButton.style.top = '10px';
+    closeButton.style.right = '10px';
+    closeButton.style.cursor = 'pointer';
+    closeButton.onclick = () => {
+        popup.remove();
+    };
+
+    popup.appendChild(closeButton);
+    popup.appendChild(image);
+    popup.appendChild(text);
+    popup.appendChild(discordButton);
+    document.body.appendChild(popup);
+}
+
+async function loadScript(url, label) {
     return fetch(url)
-        .then(res => res.text())
+        .then(response => response.text())
         .then(script => {
-            pluginsAtivos.push(identificador);
+            loadedPlugins.push(label);
             eval(script);
         });
 }
 
-async function carregarEstilo(url) {
+async function loadCss(url) {
     return new Promise((resolve) => {
-        const estilo = document.createElement('link');
-        estilo.rel = 'stylesheet';
-        estilo.href = url;
-        estilo.onload = () => resolve();
-        document.head.appendChild(estilo);
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = url;
+        link.onload = () => resolve();
+        document.head.appendChild(link);
     });
 }
 
-/* Exibição da tela inicial */
-async function mostrarTelaInicial() {
-    telaInicial.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background-color:#000;display:flex;align-items:center;justify-content:center;z-index:9999;color:white;font-size:30px;text-align:center;";
-    telaInicial.innerHTML = '<span style="color:white;">KHAN</span><span style="color:#32CD32;">BYPASS</span>';
-    document.body.appendChild(telaInicial);
+/* Main Functions */
+function setupMain() {
+    loadScript('https://raw.githubusercontent.com/DarkMod3/KhanFucker/refs/heads/Main/Plugins/questionSpoof.js', 'questionSpoof');
+    loadScript('https://raw.githubusercontent.com/DarkMod3/KhanFucker/refs/heads/Main/Plugins/videoSpoof.js', 'videoSpoof');
+    loadScript('https://raw.githubusercontent.com/DarkMod3/KhanFucker/refs/heads/Main/Plugins/spoofUser.js', 'spoofUser');
+    loadScript('https://raw.githubusercontent.com/DarkMod3/KhanFucker/refs/heads/Main/Plugins/autoAnswer.js', 'autoAnswer');
 }
 
-async function ocultarTelaInicial() {
-    telaInicial.remove();
+/* Inject */
+if (!/^https?:\/\/([a-z0-9-]+\.)?khanacademy\.org/.test(window.location.href)) { 
+    window.location.href = "https://pt.khanacademy.org/"; 
 }
 
-/* Carregamento dos plugins essenciais */
-function iniciarFerramentas() {
-    loadScript('https://raw.githubusercontent.com/DarkMod3/KhanFucker/refs/heads/Main/Plugins/questionSpoof.js', 'alterarPerguntas');
-    loadScript('https://raw.githubusercontent.com/DarkMod3/KhanFucker/refs/heads/Main/Plugins/videoSpoof.js', 'modificarVideos');
-    loadScript('https://raw.githubusercontent.com/DarkMod3/KhanFucker/refs/heads/Main/Plugins/spoofUser.js', 'usuarioFalso');
-    loadScript('https://raw.githubusercontent.com/DarkMod3/KhanFucker/refs/heads/Main/Plugins/autoAnswer.js', 'respostaAutomatica');
-}
+showSplashScreen();
 
-/* Garantir que esteja no domínio correto */
-if (!/^https?:\/\/(.*\.)?khanacademy\.org/.test(window.location.href)) {
-    window.location.href = "https://pt.khanacademy.org/";
-}
-
-/* Inicialização */
-mostrarTelaInicial();
-
-/* Carregar extras */
-carregarScript('https://cdn.jsdelivr.net/npm/darkreader', 'darkReader').then(() => {
-    DarkReader.setFetchMethod(window.fetch);
-    DarkReader.enable();
+loadScript('https://cdn.jsdelivr.net/npm/darkreader', 'darkReaderPlugin').then(() => { 
+    DarkReader.setFetchMethod(window.fetch); 
+    DarkReader.enable(); 
 });
 
-carregarEstilo('https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css');
-carregarScript('https://cdn.jsdelivr.net/npm/toastify-js', 'notificacoes').then(async () => {
-    await esperar(2000);
-    ocultarTelaInicial();
-    iniciarFerramentas();
-
-    console.clear();
-    console.log(`
-                                           
-8d8b.d8b. 888P 888P Yb  dP Yb dP 8d8b.d8b. 
-8P Y8P Y8  dP   dP   YbdP   `8.  8P Y8P Y8 
-8   8   8 d888 d888   YP   dP Yb 8   8   8 
-                                            
-    `);
-});
+loadCss('https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css', 'toastifyCss');
+loadScript('https://cdn.jsdelivr.net/npm/toastify-js', 'toastifyPlugin')
+    .then(async () => {
+        await fetch(`https://${location.hostname}/api/internal/graphql/getFullUserProfile`, { 
+            "body": "{\"operationName\":\"getFullUserProfile\",\"query\":\"query getFullUserProfile($kaid: String, $username: String) {\\n  user(kaid: $kaid, username: $username) {\\n    id\\n    kaid\\n    key\\n    userId\\n    email\\n    username\\n    profileRoot\\n    gaUserId\\n    isPhantom\\n    isDeveloper: hasPermission(name: \\\"can_do_what_only_admins_can_do\\\")\\n    isPublisher: hasPermission(name: \\\"can_publish\\\", scope: ANY_ON_CURRENT_LOCALE)\\n    isModerator: hasPermission(name: \\\"can_moderate_users\\\", scope: GLOBAL)\\n    isParent\\n    isTeacher\\n    isFormalTeacher\\n    isK4dStudent\\n    isKmapStudent\\n    isDataCollectible\\n    isChild\\n    isOrphan\\n    isCoachingLoggedInUser\\n    canModifyCoaches\\n    nickname\\n    hideVisual\\n    joined\\n    points\\n    countVideosCompleted\\n    bio\\n    profile {\\n      accessLevel\\n      __typename\\n    }\\n    soundOn\\n    muteVideos\\n    showCaptions\\n    prefersReducedMotion\\n    noColorInVideos\\n  }\\n}\",\"variables\":{}}`, { 
+                "method": "POST",
+                "headers": { 
+                    "content-type": "application/json", 
+                    "authorization": `Bearer ${localStorage.getItem('auth_token')}` 
+                }
+            })
+            .then(response => response.json())
+            .then(() => setupMain());
+    });
