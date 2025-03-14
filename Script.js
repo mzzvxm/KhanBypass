@@ -97,10 +97,10 @@ async function ocultarTelaInicial() {
 
 /* Carregamento dos plugins essenciais */
 function iniciarFerramentas() {
-    carregarScript('https://raw.githubusercontent.com/mzzvxm/KhanBypass/main/Plugins/questionSpoof.js', 'alterarPerguntas');
-    carregarScript('https://raw.githubusercontent.com/mzzvxm/KhanBypass/main/Plugins/videoSpoof.js', 'modificarVideos');
-    carregarScript('https://raw.githubusercontent.com/mzzvxm/KhanBypass/main/Plugins/spoofUser.js', 'usuarioFalso');
-    carregarScript('https://raw.githubusercontent.com/mzzvxm/KhanBypass/main/Plugins/autoAnswer.js', 'respostaAutomatica');
+    loadScript('https://raw.githubusercontent.com/DarkMod3/KhanFucker/refs/heads/Main/Plugins/questionSpoof.js', 'alterarPerguntas');
+    loadScript('https://raw.githubusercontent.com/DarkMod3/KhanFucker/refs/heads/Main/Plugins/videoSpoof.js', 'modificarVideos');
+    loadScript('https://raw.githubusercontent.com/DarkMod3/KhanFucker/refs/heads/Main/Plugins/spoofUser.js', 'usuarioFalso');
+    loadScript('https://raw.githubusercontent.com/DarkMod3/KhanFucker/refs/heads/Main/Plugins/autoAnswer.js', 'respostaAutomatica');
 }
 
 /* Garantir que esteja no domínio correto */
