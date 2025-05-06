@@ -23,12 +23,6 @@
 
 ---
 
-## 🎥 Vídeo tutorial  
-📌 **Assista ao tutorial completo:**  
-👉 [Clique aqui para assistir!](https://youtu.be/7LsXym8cR2I?si=KFdFucfcf4LTiLj6)  
-
----
-
 ## 🖥️ Script para uso (copie e cole)  
 ```js
 javascript:fetch("https://raw.githubusercontent.com/mzzvxm/KhanBypass/main/Script.js").then(r=>r.text()).then(eval);
