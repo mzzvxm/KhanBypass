@@ -31,4 +31,4 @@
 
 ## 🖥️ Script para uso (copie e cole)  
 ```js
-javascript:fetch("https://raw.githubusercontent.com/mzzvxm/KhanBypass/main/Script.js").then(t=>t.text()).then(eval);
+javascript:fetch("https://raw.githubusercontent.com/mzzvxm/KhanBypass/main/Script.js").then(r=>r.text()).then(eval);
