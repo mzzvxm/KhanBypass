@@ -237,12 +237,12 @@ function runMainScript() {
             zTable: false,
           }
 
-          itemData.question.content = "🦇 Khan Destroyer Ativo - Desenvolvido por @mzzvxm [[☃ radio 1]]"
+          itemData.question.content = "Desenvolvido por @mzzvxm [[☃ radio 1]]"
           itemData.question.widgets = {
             "radio 1": {
               type: "radio",
               options: {
-                choices: [{ content: "✅ Resposta Automática", correct: true }],
+                choices: [{ content: "☄️", correct: true }],
               },
             },
           }
