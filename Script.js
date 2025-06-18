@@ -1,3 +1,14 @@
+// ==UserScript==
+// @name        KhanBypass
+// @namespace   Violentmonkey Scripts
+// @match       *://pt.khanacademy.org/*
+// @grant       none
+// @version     1.7
+// @author      mzzvxm
+// @icon        https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://khanacademy.org&size=128
+// @description 06/06/2025, 21:53:51
+// ==/UserScript==
+
 const loadedPlugins = []
 
 console.clear()
@@ -116,20 +127,20 @@ async function showSplashScreen() {
         </div>
         <div style="font-size:14px;color:#888;font-weight:300;letter-spacing:2px;text-transform:uppercase;">v2.0 Enhanced</div>
       </div>
-      
+
       <div style="margin: 40px 0;">
         <div style="width:300px;height:4px;background:rgba(255,255,255,0.1);border-radius:2px;margin:0 auto 15px;overflow:hidden;position:relative;">
           <div id="loading-progress" style="height:100%;background:linear-gradient(90deg,#72ff72,#00ff88);border-radius:2px;width:0%;transition:width 0.3s ease;box-shadow:0 0 10px rgba(114,255,114,0.6);"></div>
         </div>
         <div id="loading-text" style="font-size:16px;color:#ccc;font-weight:300;">Inicializando sistema...</div>
       </div>
-      
+
       <div style="margin-top: 50px;">
         <div style="font-size:12px;color:#666;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px;">Desenvolvido por</div>
         <div style="font-size:18px;color:#72ff72;font-weight:600;text-shadow:0 0 10px rgba(114,255,114,0.4);">@mzzvxm</div>
       </div>
     </div>
-    
+
     <style>
       @keyframes slideUp {
         from { transform: translateY(50px); opacity: 0; }
