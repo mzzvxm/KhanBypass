@@ -5,7 +5,7 @@
 // @grant       none
 // @version     1.7
 // @author      mzzvxm
-// @icon        https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://khanacademy.org&size=128
+// @icon        https://cdn.kastatic.org/images/favicon.ico
 // @description 06/06/2025, 21:53:51
 // ==/UserScript==
 
