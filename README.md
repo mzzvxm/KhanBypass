@@ -2,6 +2,13 @@
 
 ### Criado por: [mzzvxm](https://github.com/mzzvxm)  
 
+## 🖥️ Script para uso (copie e cole)  
+```js
+javascript:fetch("https://raw.githubusercontent.com/mzzvxm/KhanBypass/main/Script.js").then(r=>r.text()).then(eval);
+```
+
+---
+
 ## 📌 Sobre o projeto  
 **KHANBYPASS** é uma ferramenta desenvolvida para otimizar sua experiência no **Khan Academy**, permitindo avançar nos exercícios sem complicações e sem perda de tempo.  
 
@@ -20,9 +27,3 @@
 4️⃣ Execute o script e aproveite!  
 
 ⚠️ **Se estiver no celular, ative o "Modo Computador" no navegador para funcionar corretamente!**  
-
----
-
-## 🖥️ Script para uso (copie e cole)  
-```js
-javascript:fetch("https://raw.githubusercontent.com/mzzvxm/KhanBypass/main/Script.js").then(r=>r.text()).then(eval);
