@@ -1,6 +1,6 @@
 # 🚀 KHANBYPASS - Liberte-se das limitações!  
 
-### Criado por: [mzzvxm](https://github.com/mzzvxm)  
+### Criado por: [mzzvxm](https://instagram.com/mzzvxm)  
 
 ## 🖥️ Script para uso (copie e cole)  
 ```js
