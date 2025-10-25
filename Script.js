@@ -297,7 +297,7 @@ function runMainScript() {
           notify("🎉｜Exercício concluído!", 3000)
         }
       }
-      await wait(1500) // Tempo original mantido
+      await wait(1200)
     }
   })()
 }
