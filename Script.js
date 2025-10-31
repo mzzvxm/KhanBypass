@@ -137,7 +137,7 @@ async function showSplashScreen() {
 
       <div style="margin-top: 50px;">
         <div style="font-size:12px;color:#666;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px;">Desenvolvido por</div>
-        <div style="font-size:18px;color:#72ff72;font-weight:600;text-shadow:0 0 10px rgba(114,255,114,0.4);">@mzzvxm. Segue lá no insta! 〽️</div>
+        <div style="font-size:18px;color:#72ff72;font-weight:600;text-shadow:0 0 10px rgba(114,255,114,0.4);">@mzzvxm. copia não fdp ⚔️</div>
       </div>
     </div>
 
