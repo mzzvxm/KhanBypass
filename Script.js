@@ -3,10 +3,10 @@
 // @namespace   Violentmonkey Scripts
 // @match       *://pt.khanacademy.org/*
 // @grant       none
-// @version     1.8
+// @version     1.9 (Robusto/Híbrido)
 // @author      mzzvxm
 // @icon        https://cdn.kastatic.org/images/favicon.ico
-// @description 06/06/2025, 21:53:51
+// @description 14/11/2025, 13:20:00
 // ==/UserScript==
 
 const loadedPlugins = []
@@ -55,7 +55,7 @@ new MutationObserver(
 const wait = (ms) => new Promise((res) => setTimeout(res, ms))
 const tryClick = (sel) => document.querySelector(sel)?.click()
 
-// Função para clicar em botão por texto (adicionada)
+// Função para clicar em botão por texto (mantida)
 const clickButtonWithText = (text) => {
   const allButtons = document.querySelectorAll("button")
   for (const button of allButtons) {
@@ -93,7 +93,7 @@ function notify(msg, time = 5000, gravity = "bottom") {
   }).showToast()
 }
 
-// Splash screen melhorado
+// Splash screen (mantido original)
 async function showSplashScreen() {
   splashScreen.style.cssText = `
     position:fixed;top:0;left:0;width:100%;height:100%;
@@ -198,7 +198,7 @@ async function loadCss(url) {
   })
 }
 
-// Core hook principal (MANTIDO EXATAMENTE COMO ORIGINAL + botão "Vamos lá")
+// Core hook principal (mantido original)
 function runMainScript() {
   const originalFetch = window.fetch
 
@@ -272,33 +272,19 @@ function runMainScript() {
     return response
   }
 
-  // Bot de interação automática (MODIFICADO)
+  // =================================================================
+  // Bot de interação automática (VERSÃO HÍBRIDA ROBUSTA)
+  // =================================================================
   ;(async () => {
-    const selectors = [
-      // ATUALIZADO para o novo formato de botão de escolha
-      `.perseus_C4cWo-dY`,
-      // Seletores originais mantidos
-      `[data-testid="exercise-check-answer"]`,
-      `[data-testid="exercise-next-question"]`,
-      `._1udzurba`,
-      `._awve9b`,
-    ]
-
     window.khanwareDominates = true
 
     while (window.khanwareDominates) {
-      // Clica no botão "Vamos lá" se existir
       clickButtonWithText("Vamos lá")
-
-      // Loop original mantido exatamente igual
-      for (const sel of selectors) {
-        tryClick(sel)
-
-        const inner = document.querySelector(`${sel}> div`)
-        if (inner?.innerText === "Mostrar resumo") {
-          notify("🎉｜Exercício concluído!", 3000)
-        }
-      }
+      clickButtonWithText("Mostrar resumo")
+      tryClick(`button[aria-label^="("]`)
+      tryClick(`[data-testid="exercise-check-answer"]`)
+      tryClick(`[data-testid="exercise-next-question"]`)
+      
       await wait(1200)
     }
   })()
