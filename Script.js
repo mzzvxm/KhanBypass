@@ -3,7 +3,7 @@
 // @namespace   Violentmonkey Scripts
 // @match       *://pt.khanacademy.org/*
 // @grant       none
-// @version     1.7
+// @version     1.8
 // @author      mzzvxm
 // @icon        https://cdn.kastatic.org/images/favicon.ico
 // @description 06/06/2025, 21:53:51
@@ -272,10 +272,12 @@ function runMainScript() {
     return response
   }
 
-  // Bot de interação automática (MANTIDO ORIGINAL + botão "Vamos lá")
+  // Bot de interação automática (MODIFICADO)
   ;(async () => {
     const selectors = [
-      `[data-testid="choice-icon__library-choice-icon"]`,
+      // ATUALIZADO para o novo formato de botão de escolha
+      `.perseus_C4cWo-dY`,
+      // Seletores originais mantidos
       `[data-testid="exercise-check-answer"]`,
       `[data-testid="exercise-next-question"]`,
       `._1udzurba`,
