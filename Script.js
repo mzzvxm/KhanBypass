@@ -1,12 +1,12 @@
 // ==UserScript==
 // @name        KhanBypass
-// @namespace   Violentmonkey Scripts
+// @namespace   mzzvxm
 // @match       *://pt.khanacademy.org/*
 // @grant       none
-// @version     1.9 (Robusto/Híbrido)
+// @version     2.6
 // @author      mzzvxm
 // @icon        https://cdn.kastatic.org/images/favicon.ico
-// @description 14/11/2025, 13:20:00
+// @description 2025-11-22 - Logo Spoof + Fixes
 // ==/UserScript==
 
 const loadedPlugins = []
@@ -17,7 +17,6 @@ console.warn = console.error = window.debug = silent
 
 const splashScreen = document.createElement("splashScreen")
 
-// MZ's Event Manager (mantido original)
 class EventEmitter {
   constructor() {
     this.events = {}
@@ -46,16 +45,64 @@ class EventEmitter {
 
 const eventBus = new EventEmitter()
 
-// DOM observer personalizado (mantido original)
 new MutationObserver(
   (changes) => changes.some((change) => change.type === "childList") && eventBus.emit("domChanged"),
 ).observe(document.body, { childList: true, subtree: true })
 
-// Utilitários (mantidos originais)
+function applyLogoSpoof() {
+    // Injeta a fonte via jsDelivr (Verifica se já existe pra não duplicar)
+    if (!document.getElementById('mzz-font-style')) {
+        const fontStyle = document.createElement('style');
+        fontStyle.id = 'mzz-font-style';
+        fontStyle.innerHTML = `
+            @font-face {
+              font-family: 'BrandonTextOfficeBold';
+              src: url('https://cdn.jsdelivr.net/gh/mzzvxm/KhanBypass@main/fonts/BrandonText-Bold.otf') format('opentype');
+              font-weight: normal;
+              font-style: normal;
+              font-display: swap;
+            }
+        `;
+        document.head.appendChild(fontStyle);
+    }
+
+    // Encontra o SVG
+    const svg = document.querySelector('svg._1rt6g9t');
+
+    // Se não achar o SVG ou se já tiver sido modificado (evita loop), retorna
+    if (!svg || svg.dataset.mzzSpoofed) return;
+
+    // Captura a cor original antes de remover
+    let originalColor = '#444'; // fallback
+    const originalPath = svg.querySelector('path[fill]');
+    if (originalPath) originalColor = originalPath.getAttribute('fill');
+
+    // Remove paths antigos (mas mantém o icone/folha se tiver fill definido, remove texto)
+    const textPaths = svg.querySelectorAll('path:not([fill])');
+    textPaths.forEach(p => p.remove());
+
+    // Cria o novo texto
+    const newText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    newText.textContent = '@MZZVXM';
+    newText.setAttribute('x', '33');
+    newText.setAttribute('y', '20');
+    newText.setAttribute('font-family', '"BrandonTextOfficeBold", sans-serif');
+    newText.setAttribute('font-weight', 'normal');
+    newText.setAttribute('font-size', '20px');
+    newText.setAttribute('fill', originalColor);
+
+    svg.appendChild(newText);
+
+    // Marca o SVG como modificado para o MutationObserver não rodar infinitamente nele
+    svg.dataset.mzzSpoofed = "true";
+}
+
+// Executa o spoof da logo sempre que o DOM mudar
+eventBus.on("domChanged", applyLogoSpoof);
+
 const wait = (ms) => new Promise((res) => setTimeout(res, ms))
 const tryClick = (sel) => document.querySelector(sel)?.click()
 
-// Função para clicar em botão por texto (mantida)
 const clickButtonWithText = (text) => {
   const allButtons = document.querySelectorAll("button")
   for (const button of allButtons) {
@@ -93,7 +140,6 @@ function notify(msg, time = 5000, gravity = "bottom") {
   }).showToast()
 }
 
-// Splash screen (mantido original)
 async function showSplashScreen() {
   splashScreen.style.cssText = `
     position:fixed;top:0;left:0;width:100%;height:100%;
@@ -125,7 +171,7 @@ async function showSplashScreen() {
           <span style="color:white;font-size:48px;font-weight:900;text-shadow:0 0 20px rgba(255,255,255,0.5);letter-spacing:4px;">KHAN</span>
           <span style="color:#72ff72;font-size:48px;font-weight:900;text-shadow:0 0 20px rgba(114,255,114,0.8);letter-spacing:4px;margin-left:10px;">DESTROYER</span>
         </div>
-        <div style="font-size:14px;color:#888;font-weight:300;letter-spacing:2px;text-transform:uppercase;">v2.0 Enhanced</div>
+        <div style="font-size:14px;color:#888;font-weight:300;letter-spacing:2px;text-transform:uppercase;">v2.5 Enhanced</div>
       </div>
 
       <div style="margin: 40px 0;">
@@ -177,7 +223,7 @@ async function showSplashScreen() {
 async function hideSplashScreen() {
   splashScreen.style.opacity = "0"
   setTimeout(() => splashScreen.remove(), 1000)
-  notify("🦇｜Khan Destroyer v2.0 ativado com sucesso!", 4000)
+  notify("🦇｜Khan Destroyer v2.5 ativado com sucesso!", 4000)
 }
 
 async function loadScript(url, label) {
@@ -198,18 +244,36 @@ async function loadCss(url) {
   })
 }
 
-// Core hook principal (mantido original)
 function runMainScript() {
   const originalFetch = window.fetch
+  const correctAnswers = new Map() // Armazena respostas corretas
+
+  const spoofPhrases = [
+      "⚔️ Segue lá no Github [**@mzzvxm**](https://github.com/mzzvxm/).",
+      "🌀 Chapa Máxima!",
+  ];
+
+  // Helper para frações
+  const toFraction = (d) => {
+      if (d === 0 || d === 1) return String(d);
+      const decimals = (String(d).split('.')[1] || '').length;
+      let num = Math.round(d * Math.pow(10, decimals)), den = Math.pow(10, decimals);
+      const gcd = (a, b) => { while (b) [a, b] = [b, a % b]; return a; };
+      const div = gcd(Math.abs(num), Math.abs(den));
+      return den / div === 1 ? String(num / div) : `${num / div}/${den / div}`;
+  };
 
   window.fetch = async function (resource, init) {
     let content
+    const url = resource instanceof Request ? resource.url : resource;
+
     if (resource instanceof Request) {
       content = await resource.clone().text()
     } else if (init?.body) {
       content = init.body
     }
 
+    // VIDEO EXPLOIT
     if (content?.includes('"operationName":"updateUserVideoProgress"')) {
       try {
         const parsed = JSON.parse(content)
@@ -228,53 +292,165 @@ function runMainScript() {
       } catch {}
     }
 
+    // Aplica a resposta correta
+    if (url.includes('attemptProblem') && content) {
+        try {
+            let bodyObj = JSON.parse(content);
+            const itemId = bodyObj.variables?.input?.assessmentItemId;
+            const answers = correctAnswers.get(itemId);
+
+            if (answers?.length > 0) {
+                const attemptContent = [], userInput = {};
+                let attemptState = bodyObj.variables.input.attemptState ? JSON.parse(bodyObj.variables.input.attemptState) : null;
+
+                answers.forEach(a => {
+                    if (a.type === 'radio') {
+                        attemptContent.push({ selectedChoiceIds: [a.choiceId] });
+                        userInput[a.widgetKey] = { selectedChoiceIds: [a.choiceId] };
+                    }
+                    else if (a.type === 'numeric') {
+                        attemptContent.push({ currentValue: a.value });
+                        userInput[a.widgetKey] = { currentValue: a.value };
+                        if (attemptState?.[a.widgetKey]) attemptState[a.widgetKey].currentValue = a.value;
+                    }
+                    else if (a.type === 'expression') {
+                        attemptContent.push(a.value);
+                        userInput[a.widgetKey] = a.value;
+                        if (attemptState?.[a.widgetKey]) attemptState[a.widgetKey].value = a.value;
+                    }
+                    else if (a.type === 'grapher') {
+                        const graph = { type: a.graphType, coords: a.coords, asymptote: a.asymptote || null };
+                        attemptContent.push(graph);
+                        userInput[a.widgetKey] = graph;
+                        if (attemptState?.[a.widgetKey]) attemptState[a.widgetKey].plot = graph;
+                    }
+                });
+
+                bodyObj.variables.input.attemptContent = JSON.stringify([attemptContent, []]);
+                bodyObj.variables.input.userInput = JSON.stringify(userInput);
+                if (attemptState) bodyObj.variables.input.attemptState = JSON.stringify(attemptState);
+
+                content = JSON.stringify(bodyObj);
+                if (resource instanceof Request) resource = new Request(resource, { body: content });
+                else init.body = content;
+
+                notify(`✨ ${answers.length} resposta(s) aplicada(s).`, 750);
+            }
+        } catch (e) { console.error(e); }
+    }
+
     const response = await originalFetch.apply(this, arguments)
 
-    try {
-      const clone = response.clone()
-      const text = await clone.text()
-      const parsed = JSON.parse(text)
+    // GET ASSESSMENT
+    if (url.includes('getAssessmentItem')) {
+      try {
+        const clone = response.clone()
+        const text = await clone.text()
+        const parsed = JSON.parse(text)
 
-      const itemDataRaw = parsed?.data?.assessmentItem?.item?.itemData
-      if (itemDataRaw) {
-        const itemData = JSON.parse(itemDataRaw)
-
-        if (itemData.question.content[0] === itemData.question.content[0].toUpperCase()) {
-          itemData.answerArea = {
-            calculator: false,
-            chi2Table: false,
-            periodicTable: false,
-            tTable: false,
-            zTable: false,
-          }
-
-          itemData.question.content = "Desenvolvido por @mzzvxm. Segue lá no insta! 〽️ [[☃ radio 1]]"
-          itemData.question.widgets = {
-            "radio 1": {
-              type: "radio",
-              options: {
-                choices: [{ content: "☄️", correct: true }],
-              },
-            },
-          }
-
-          parsed.data.assessmentItem.item.itemData = JSON.stringify(itemData)
-
-          return new Response(JSON.stringify(parsed), {
-            status: response.status,
-            statusText: response.statusText,
-            headers: response.headers,
-          })
+        // Localiza o item dentro da resposta
+        let item = null;
+        if (parsed?.data) {
+            for (const key in parsed.data) {
+                if (parsed.data[key]?.item) {
+                    item = parsed.data[key].item;
+                    break;
+                }
+            }
         }
-      }
-    } catch {}
+
+        const itemDataRaw = item?.itemData
+        if (itemDataRaw) {
+            let itemData = JSON.parse(itemDataRaw)
+            const answers = []
+
+            for (const [key, w] of Object.entries(itemData.question.widgets || {})) {
+                if (w.type === 'radio' && w.options?.choices) {
+                    const choices = w.options.choices.map((c, i) => ({ ...c, id: c.id || `radio-choice-${i}` }));
+                    const correct = choices.find(c => c.correct);
+                    if (correct) answers.push({ type: 'radio', choiceId: correct.id, widgetKey: key });
+                }
+                else if (w.type === 'numeric-input' && w.options?.answers) {
+                    const correct = w.options.answers.find(a => a.status === 'correct');
+                    if (correct) {
+                        const val = correct.answerForms?.some(f => f === 'proper' || f === 'improper')
+                            ? toFraction(correct.value) : String(correct.value);
+                        answers.push({ type: 'numeric', value: val, widgetKey: key });
+                    }
+                }
+                else if (w.type === 'expression' && w.options?.answerForms) {
+                    const correct = w.options.answerForms.find(f => f.considered === 'correct' || f.form === true);
+                    if (correct) answers.push({ type: 'expression', value: correct.value, widgetKey: key });
+                }
+                else if (w.type === 'grapher' && w.options?.correct) {
+                    const c = w.options.correct;
+                    if (c.type && c.coords) answers.push({
+                        type: 'grapher', graphType: c.type, coords: c.coords,
+                        asymptote: c.asymptote || null, widgetKey: key
+                    });
+                }
+            }
+
+            if (answers.length > 0) {
+                correctAnswers.set(item.id, answers);
+            }
+
+            // B. Aplica o Spoof Visual
+            if (itemData.question.content[0] === itemData.question.content[0].toUpperCase()) {
+                const randomPhrase = spoofPhrases[Math.floor(Math.random() * spoofPhrases.length)]
+
+                itemData.answerArea = {
+                    calculator: false,
+                    chi2Table: false,
+                    periodicTable: false,
+                    tTable: false,
+                    zTable: false,
+                }
+
+                // Conteúdo da Questão
+                itemData.question.content = randomPhrase + "\n\n**Tenho Outros Scripts também! depois dá uma olhada no [ScriptHub](https://scripthubb.vercel.app/)**" + `[[☃ radio 1]]` + `\n\n**〽️ Segue lá no Instagram! [@mzzvxm](https://instagram.com/mzzvxm)**` ;
+
+                // Widgets da Questão
+                itemData.question.widgets = {
+                  "radio 1": {
+                    type: "radio", alignment: "default", static: false, graded: true,
+                    options: {
+                        choices: [
+                            { content: "**〽️**", correct: true, id: "correct-choice" },
+                            { content: "", correct: false, id: "incorrect-choice" }
+                        ],
+                        randomize: false, multipleSelect: false, displayCount: null, deselectEnabled: false
+                    },
+                    version: { major: 1, minor: 0 }
+                  },
+                }
+
+                // Salva as alterações no JSON
+                const modifiedData = { ...parsed };
+                if (modifiedData.data) {
+                    for (const key in modifiedData.data) {
+                        if (modifiedData.data[key]?.item?.itemData) {
+                            modifiedData.data[key].item.itemData = JSON.stringify(itemData);
+                            break;
+                        }
+                    }
+                }
+
+                notify("🔓 Questão exploitada.", 750);
+                return new Response(JSON.stringify(modifiedData), {
+                    status: response.status,
+                    statusText: response.statusText,
+                    headers: response.headers,
+                })
+            }
+        }
+      } catch (e) { console.error(e) }
+    }
 
     return response
   }
 
-  // =================================================================
-  // Bot de interação automática (VERSÃO HÍBRIDA ROBUSTA)
-  // =================================================================
+  // Bot de interação automática
   ;(async () => {
     window.khanwareDominates = true
 
@@ -284,13 +460,12 @@ function runMainScript() {
       tryClick(`button[aria-label^="("]`)
       tryClick(`[data-testid="exercise-check-answer"]`)
       tryClick(`[data-testid="exercise-next-question"]`)
-      
+
       await wait(1200)
     }
   })()
 }
 
-// Validação de domínio e inicialização (mantida original)
 if (!/^https?:\/\/([a-z0-9-]+\.)?khanacademy\.org/.test(window.location.href)) {
   window.location.href = "https://pt.khanacademy.org/"
 } else {
@@ -306,10 +481,11 @@ if (!/^https?:\/\/([a-z0-9-]+\.)?khanacademy\.org/.test(window.location.href)) {
       loadScript("https://cdn.jsdelivr.net/npm/toastify-js", "toastifyPlugin"),
     ])
 
-    await wait(2000)
+    await wait(500)
     await hideSplashScreen()
 
     runMainScript()
+    applyLogoSpoof() // Tenta aplicar logo na inicialização também
     notify("🦇｜Khan Destroyer por mzzvxm iniciado!")
     console.clear()
   })()
