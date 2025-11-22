@@ -4,7 +4,7 @@
 
 ## 🖥️ Script para uso (copie e cole)  
 ```js
-javascript:fetch("https://cdn.jsdelivr.net/gh/mzzvxm/KhanBypass@ce06ad5/Script.js").then(r=>r.text()).then(eval);
+javascript:fetch("https://cdn.jsdelivr.net/gh/mzzvxm/KhanBypass@latest/Script.js").then(r=>r.text()).then(eval);
 ```
 
 ---
