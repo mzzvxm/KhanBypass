@@ -3,10 +3,10 @@
 // @namespace   mzzvxm
 // @match       *://pt.khanacademy.org/*
 // @grant       none
-// @version     2.6
+// @version     2.7
 // @author      mzzvxm
 // @icon        https://cdn.kastatic.org/images/favicon.ico
-// @description 2025-11-22 - Logo Spoof + Fixes
+// @description 2025-11-22
 // ==/UserScript==
 
 const loadedPlugins = []
@@ -171,7 +171,7 @@ async function showSplashScreen() {
           <span style="color:white;font-size:48px;font-weight:900;text-shadow:0 0 20px rgba(255,255,255,0.5);letter-spacing:4px;">KHAN</span>
           <span style="color:#72ff72;font-size:48px;font-weight:900;text-shadow:0 0 20px rgba(114,255,114,0.8);letter-spacing:4px;margin-left:10px;">DESTROYER</span>
         </div>
-        <div style="font-size:14px;color:#888;font-weight:300;letter-spacing:2px;text-transform:uppercase;">v2.5 Enhanced</div>
+        <div style="font-size:14px;color:#888;font-weight:300;letter-spacing:2px;text-transform:uppercase;">v2.7 Enhanced</div>
       </div>
 
       <div style="margin: 40px 0;">
@@ -223,7 +223,7 @@ async function showSplashScreen() {
 async function hideSplashScreen() {
   splashScreen.style.opacity = "0"
   setTimeout(() => splashScreen.remove(), 1000)
-  notify("🦇｜Khan Destroyer v2.5 ativado com sucesso!", 4000)
+  notify("🦇｜Khan Destroyer v2.7 ativado com sucesso!", 4000)
 }
 
 async function loadScript(url, label) {
@@ -253,7 +253,7 @@ function runMainScript() {
       "🌀 Chapa Máxima!",
   ];
 
-  // Helper para frações
+  // --- HELPERS DO NOVO MÉTODO ---
   const toFraction = (d) => {
       if (d === 0 || d === 1) return String(d);
       const decimals = (String(d).split('.')[1] || '').length;
@@ -261,6 +261,22 @@ function runMainScript() {
       const gcd = (a, b) => { while (b) [a, b] = [b, a % b]; return a; };
       const div = gcd(Math.abs(num), Math.abs(den));
       return den / div === 1 ? String(num / div) : `${num / div}/${den / div}`;
+  };
+
+  const isWidgetUsed = (widgetKey, questionContent, hints) => {
+    const widgetPattern = `☃ ${widgetKey.replace(/\s+/g, ' ')}`;
+    if (questionContent && questionContent.includes(widgetPattern)) return true;
+    if (hints && Array.isArray(hints)) {
+        for (const hint of hints) {
+            if (hint.content && hint.content.includes(widgetPattern)) return true;
+            if (hint.widgets) {
+                for (const hintWidget of Object.values(hint.widgets)) {
+                    if (hintWidget.options?.content?.includes(widgetPattern)) return true;
+                }
+            }
+        }
+    }
+    return false;
   };
 
   window.fetch = async function (resource, init) {
@@ -273,7 +289,9 @@ function runMainScript() {
       content = init.body
     }
 
-    // VIDEO EXPLOIT
+    // --------------------------------------------------------
+    // VIDEO EXPLOIT (Mantido do Original)
+    // --------------------------------------------------------
     if (content?.includes('"operationName":"updateUserVideoProgress"')) {
       try {
         const parsed = JSON.parse(content)
@@ -292,7 +310,9 @@ function runMainScript() {
       } catch {}
     }
 
-    // Aplica a resposta correta
+    // --------------------------------------------------------
+    // APPLY ANSWERS (Atualizado com método novo e robusto)
+    // --------------------------------------------------------
     if (url.includes('attemptProblem') && content) {
         try {
             let bodyObj = JSON.parse(content);
@@ -301,34 +321,175 @@ function runMainScript() {
 
             if (answers?.length > 0) {
                 const attemptContent = [], userInput = {};
-                let attemptState = bodyObj.variables.input.attemptState ? JSON.parse(bodyObj.variables.input.attemptState) : null;
+                let state = bodyObj.variables.input.attemptState ? JSON.parse(bodyObj.variables.input.attemptState) : null;
 
+                // Validação de estado
+                if (state) {
+                    const answerKeys = new Set(answers.map(a => a.widgetKey));
+                    const stateKeys = Object.keys(state);
+                    const hasInvalidWidgets = stateKeys.some(key => !answerKeys.has(key) && key !== 'hint');
+                    if (hasInvalidWidgets) {
+                        state = {};
+                        answers.forEach(a => { state[a.widgetKey] = {}; });
+                    }
+                }
+
+                // Aplicação robusta para todos os tipos
                 answers.forEach(a => {
                     if (a.type === 'radio') {
-                        attemptContent.push({ selectedChoiceIds: [a.choiceId] });
-                        userInput[a.widgetKey] = { selectedChoiceIds: [a.choiceId] };
+                        const selectedIds = a.multipleSelect ? a.choiceIds : [a.choiceIds[0]];
+                        attemptContent.push({ selectedChoiceIds: selectedIds });
+                        userInput[a.widgetKey] = { selectedChoiceIds: selectedIds };
                     }
-                    else if (a.type === 'numeric') {
+                    else if (a.type === 'dropdown') {
+                        attemptContent.push({ value: a.value });
+                        userInput[a.widgetKey] = { value: a.value };
+                        if (state) {
+                            state[a.widgetKey] = {
+                                placeholder: a.placeholder || '',
+                                static: false,
+                                alignment: 'default',
+                                dependencies: { analytics: {} },
+                                choices: a.choices || [],
+                                selected: a.value
+                            };
+                        }
+                    }
+                    else if (a.type === 'numeric-input') {
+                        userInput[a.widgetKey] = { currentValue: a.value };
+                        if (state?.[a.widgetKey]) {
+                            state[a.widgetKey].currentValue = a.value;
+                            if (a.simplify) state[a.widgetKey].simplify = a.simplify;
+                        }
+                    }
+                    else if (a.type === 'input-number') {
                         attemptContent.push({ currentValue: a.value });
                         userInput[a.widgetKey] = { currentValue: a.value };
-                        if (attemptState?.[a.widgetKey]) attemptState[a.widgetKey].currentValue = a.value;
+                        if (state?.[a.widgetKey]) {
+                            state[a.widgetKey].currentValue = a.value;
+                            if (a.simplify) state[a.widgetKey].simplify = a.simplify;
+                            if (a.answerType) state[a.widgetKey].answerType = a.answerType;
+                        }
                     }
                     else if (a.type === 'expression') {
                         attemptContent.push(a.value);
                         userInput[a.widgetKey] = a.value;
-                        if (attemptState?.[a.widgetKey]) attemptState[a.widgetKey].value = a.value;
+                        if (state?.[a.widgetKey]) state[a.widgetKey].value = a.value;
+                        else if (state) {
+                            state[a.widgetKey] = {
+                                buttonSets: a.buttonSets || ['basic'],
+                                functions: a.functions || ['f', 'g', 'h'],
+                                times: a.times || false,
+                                extraKeys: [],
+                                alignment: 'default',
+                                static: false,
+                                value: a.value,
+                                keypadConfiguration: { keypadType: 'EXPRESSION', extraKeys: [], times: a.times || false }
+                            };
+                        }
                     }
                     else if (a.type === 'grapher') {
                         const graph = { type: a.graphType, coords: a.coords, asymptote: a.asymptote || null };
                         attemptContent.push(graph);
                         userInput[a.widgetKey] = graph;
-                        if (attemptState?.[a.widgetKey]) attemptState[a.widgetKey].plot = graph;
+                        if (state?.[a.widgetKey]) state[a.widgetKey].plot = graph;
+                    }
+                    else if (a.type === 'interactive-graph') {
+                        const graph = {
+                            coords: a.coords,
+                            match: a.match,
+                            type: a.graphType,
+                            showSides: a.showSides,
+                            snapTo: a.snapTo
+                        };
+                        attemptContent.push(graph);
+                        userInput[a.widgetKey] = graph;
+                        if (state?.[a.widgetKey]) state[a.widgetKey].coords = a.coords;
+                    }
+                    else if (a.type === 'categorizer') {
+                        attemptContent.push({ values: a.values });
+                        userInput[a.widgetKey] = { values: a.values };
+                    }
+                    else if (a.type === 'matcher') {
+                        const matcherData = { left: a.left, right: a.right };
+                        attemptContent.push(matcherData);
+                        userInput[a.widgetKey] = matcherData;
+                        if (state?.[a.widgetKey]) {
+                            state[a.widgetKey].left = a.left;
+                            state[a.widgetKey].right = a.right;
+                        }
+                    }
+                    else if (a.type === 'orderer') {
+                        attemptContent.push({ options: a.correctOptions });
+                        userInput[a.widgetKey] = { options: a.correctOptions };
+                    }
+                    else if (a.type === 'sorter') {
+                        attemptContent.push({ options: a.correct, changed: true });
+                        userInput[a.widgetKey] = { options: a.correct, changed: true };
+                        if (state?.[a.widgetKey]) {
+                            state[a.widgetKey].correct = a.correct;
+                            state[a.widgetKey].options = a.correct;
+                            state[a.widgetKey].changed = true;
+                            state[a.widgetKey].layout = a.layout || "horizontal";
+                        }
+                    }
+                    else if (a.type === 'number-line') {
+                        let numDivisions = state?.[a.widgetKey]?.numDivisions || 1;
+                        attemptContent.push({ numDivisions: numDivisions, numLinePosition: a.correctX, rel: a.correctRel });
+                        userInput[a.widgetKey] = { numDivisions: numDivisions, numLinePosition: a.correctX, rel: a.correctRel };
+                        if (state?.[a.widgetKey]) {
+                            state[a.widgetKey].numLinePosition = a.correctX;
+                            state[a.widgetKey].rel = a.correctRel;
+                        }
+                    }
+                    else if (a.type === 'plotter') {
+                        attemptContent.push(a.correct);
+                        userInput[a.widgetKey] = a.correct;
+                        if (state?.[a.widgetKey]) {
+                            state[a.widgetKey].values = a.correct;
+                            state[a.widgetKey].correct = [1];
+                            state[a.widgetKey].type = a.plotType;
+                        }
+                    }
+                    else if (a.type === 'matrix') {
+                        const stringAnswers = a.answers.map(row => row.map(val => String(val)));
+                        attemptContent.push({ answers: stringAnswers });
+                        userInput[a.widgetKey] = { answers: stringAnswers };
+                        if (state?.[a.widgetKey]) {
+                            state[a.widgetKey].answers = stringAnswers;
+                            state[a.widgetKey].cursorPosition = a.cursorPosition || [0, 0];
+                            state[a.widgetKey].matrixBoardSize = a.matrixBoardSize || [3, 3];
+                        }
+                    }
+                    else if (a.type === 'table') {
+                        attemptContent.push({ answers: a.answers });
+                        userInput[a.widgetKey] = { answers: a.answers };
+                    }
+                    else if (a.type === 'label-image') {
+                        const markersWithAnswers = a.markers.map(marker => ({ label: marker.label, selected: marker.answers }));
+                        attemptContent.push(null);
+                        attemptContent.push({ markers: markersWithAnswers });
+                        userInput[a.widgetKey] = { markers: markersWithAnswers };
+                        if (state?.[a.widgetKey]) {
+                            state[a.widgetKey].markers = a.markers.map(marker => ({
+                                label: marker.label, x: marker.x, y: marker.y, selected: marker.answers
+                            }));
+                        }
                     }
                 });
 
+                // Tratamento especial para Numeric Input se content array estiver vazio
+                const numericInputs = answers.filter(a => a.type === 'numeric-input');
+                if (numericInputs.length > 0) {
+                     numericInputs.forEach(a => {
+                        // Numeric inputs as vezes precisam ser duplicados no content array se houver multiplos
+                        attemptContent.push({ currentValue: a.value });
+                     });
+                }
+
                 bodyObj.variables.input.attemptContent = JSON.stringify([attemptContent, []]);
                 bodyObj.variables.input.userInput = JSON.stringify(userInput);
-                if (attemptState) bodyObj.variables.input.attemptState = JSON.stringify(attemptState);
+                if (state) bodyObj.variables.input.attemptState = JSON.stringify(state);
 
                 content = JSON.stringify(bodyObj);
                 if (resource instanceof Request) resource = new Request(resource, { body: content });
@@ -336,12 +497,12 @@ function runMainScript() {
 
                 notify(`✨ ${answers.length} resposta(s) aplicada(s).`, 750);
             }
-        } catch (e) { console.error(e); }
+        } catch (e) { console.error("Erro no Attempt:", e); }
     }
 
     const response = await originalFetch.apply(this, arguments)
 
-    // GET ASSESSMENT
+    
     if (url.includes('getAssessmentItem')) {
       try {
         const clone = response.clone()
@@ -365,23 +526,65 @@ function runMainScript() {
             const answers = []
 
             for (const [key, w] of Object.entries(itemData.question.widgets || {})) {
+                // Checa se o widget realmente está em uso na questão (Fix fantasma)
+                if (!isWidgetUsed(key, itemData.question.content, itemData.hints)) continue;
+
+                // --- RADIO ---
                 if (w.type === 'radio' && w.options?.choices) {
                     const choices = w.options.choices.map((c, i) => ({ ...c, id: c.id || `radio-choice-${i}` }));
-                    const correct = choices.find(c => c.correct);
-                    if (correct) answers.push({ type: 'radio', choiceId: correct.id, widgetKey: key });
-                }
-                else if (w.type === 'numeric-input' && w.options?.answers) {
-                    const correct = w.options.answers.find(a => a.status === 'correct');
-                    if (correct) {
-                        const val = correct.answerForms?.some(f => f === 'proper' || f === 'improper')
-                            ? toFraction(correct.value) : String(correct.value);
-                        answers.push({ type: 'numeric', value: val, widgetKey: key });
+                    const correctChoices = choices.filter(c => c.correct);
+                    if (correctChoices.length > 0) {
+                        answers.push({
+                            type: 'radio',
+                            choiceIds: correctChoices.map(c => c.id),
+                            multipleSelect: w.options.multipleSelect || false,
+                            widgetKey: key
+                        });
                     }
                 }
+                // --- DROPDOWN ---
+                else if (w.type === 'dropdown' && w.options?.choices) {
+                    const correctIndex = w.options.choices.findIndex(c => c.correct);
+                    if (correctIndex !== -1) {
+                        answers.push({
+                            type: 'dropdown',
+                            value: correctIndex + 1,
+                            choices: w.options.choices.map(c => c.content),
+                            placeholder: w.options.placeholder || '',
+                            widgetKey: key
+                        });
+                    }
+                }
+                // --- NUMERIC INPUT ---
+                else if (w.type === 'numeric-input' && w.options?.answers) {
+                    const correct = w.options.answers.find(a => a.status === 'correct');
+                    if (correct && correct.value != null) {
+                        let val = correct.value;
+                        const answerForms = correct.answerForms || [];
+                        if (answerForms.includes('proper') || answerForms.includes('improper') || answerForms.includes('mixed')) val = toFraction(val);
+                        else val = String(val);
+                        answers.push({ type: 'numeric-input', value: val, simplify: correct.simplify || 'required', widgetKey: key });
+                    }
+                }
+                // --- INPUT NUMBER ---
+                else if (w.type === 'input-number' && w.options?.value !== undefined) {
+                    let val = w.options.value;
+                    if (val > 0 && val < 1 && String(val).includes('.')) val = toFraction(val);
+                    else val = String(val);
+                    answers.push({
+                        type: 'input-number',
+                        value: val,
+                        simplify: w.options.simplify || 'required',
+                        answerType: w.options.answerType || 'number',
+                        widgetKey: key
+                    });
+                }
+                // --- EXPRESSION ---
                 else if (w.type === 'expression' && w.options?.answerForms) {
                     const correct = w.options.answerForms.find(f => f.considered === 'correct' || f.form === true);
                     if (correct) answers.push({ type: 'expression', value: correct.value, widgetKey: key });
                 }
+                // --- GRAPHER ---
                 else if (w.type === 'grapher' && w.options?.correct) {
                     const c = w.options.correct;
                     if (c.type && c.coords) answers.push({
@@ -389,13 +592,76 @@ function runMainScript() {
                         asymptote: c.asymptote || null, widgetKey: key
                     });
                 }
+                // --- INTERACTIVE GRAPH ---
+                else if (w.type === 'interactive-graph' && w.options?.correct) {
+                    const c = w.options.correct;
+                    if (c.coords) {
+                        answers.push({
+                            type: 'interactive-graph', coords: c.coords, match: c.match || 'congruent',
+                            graphType: c.type, showSides: c.showSides, snapTo: c.snapTo, widgetKey: key
+                        });
+                    }
+                }
+                // --- CATEGORIZER ---
+                else if (w.type === 'categorizer' && w.options?.values) {
+                    answers.push({ type: 'categorizer', values: w.options.values, widgetKey: key });
+                }
+                // --- MATCHER ---
+                else if (w.type === 'matcher' && w.options?.left && w.options?.right) {
+                    answers.push({ type: 'matcher', left: w.options.left, right: w.options.right, widgetKey: key });
+                }
+                // --- ORDERER ---
+                else if (w.type === 'orderer' && w.options?.correctOptions) {
+                    answers.push({ type: 'orderer', correctOptions: w.options.correctOptions, widgetKey: key });
+                }
+                // --- SORTER ---
+                else if (w.type === 'sorter' && w.options?.correct) {
+                    answers.push({ type: 'sorter', correct: w.options.correct, widgetKey: key });
+                }
+                // --- NUMBER LINE ---
+                else if (w.type === 'number-line' && w.options?.correctX !== null) {
+                    answers.push({ type: 'number-line', correctX: w.options.correctX, correctRel: w.options.correctRel || 'eq', widgetKey: key });
+                }
+                // --- PLOTTER ---
+                else if (w.type === 'plotter' && w.options?.correct) {
+                    answers.push({
+                         type: 'plotter', correct: w.options.correct, plotType: w.options.type || 'bar',
+                         categories: w.options.categories || [], labels: w.options.labels || [],
+                         maxY: w.options.maxY || 24, scaleY: w.options.scaleY || 1, widgetKey: key
+                    });
+                }
+                // --- MATRIX ---
+                else if (w.type === 'matrix' && w.options?.answers) {
+                    answers.push({
+                        type: 'matrix', answers: w.options.answers, widgetKey: key,
+                        prefix: w.options.prefix || "", suffix: w.options.suffix || "",
+                        matrixBoardSize: w.options.matrixBoardSize || [3, 3], cursorPosition: w.options.cursorPosition || [0, 0]
+                    });
+                }
+                // --- TABLE ---
+                else if (w.type === 'table' && w.options?.answers) {
+                    answers.push({ type: 'table', answers: w.options.answers, widgetKey: key });
+                }
+                // --- LABEL IMAGE ---
+                else if (w.type === 'label-image' && w.options?.markers) {
+                    const markers = w.options.markers.map(marker => ({
+                        label: marker.label, answers: marker.answers, x: marker.x, y: marker.y
+                    }));
+                    answers.push({
+                        type: 'label-image', markers: markers, choices: w.options.choices || [],
+                        imageUrl: w.options.imageUrl || "", widgetKey: key
+                    });
+                }
             }
 
             if (answers.length > 0) {
                 correctAnswers.set(item.id, answers);
+                notify(`📦 ${answers.length} resposta(s) capturada(s).`, 750);
             }
 
-            // B. Aplica o Spoof Visual
+            // --------------------------------------------------------
+            // VISUAL SPOOF (MANTENDO SUA IDENTIDADE VISUAL)
+            // --------------------------------------------------------
             if (itemData.question.content[0] === itemData.question.content[0].toUpperCase()) {
                 const randomPhrase = spoofPhrases[Math.floor(Math.random() * spoofPhrases.length)]
 
@@ -407,7 +673,7 @@ function runMainScript() {
                     zTable: false,
                 }
 
-                // Conteúdo da Questão
+                // Conteúdo da Questão (Seu Branding)
                 itemData.question.content = randomPhrase + "\n\n**Tenho Outros Scripts também! depois dá uma olhada no [ScriptHub](https://scripthubb.vercel.app/)**" + `[[☃ radio 1]]` + `\n\n**〽️ Segue lá no Instagram! [@mzzvxm](https://instagram.com/mzzvxm)**` ;
 
                 // Widgets da Questão
@@ -444,7 +710,7 @@ function runMainScript() {
                 })
             }
         }
-      } catch (e) { console.error(e) }
+      } catch (e) { console.error("Erro no GetAssessment:", e) }
     }
 
     return response
