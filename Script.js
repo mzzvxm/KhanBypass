@@ -222,7 +222,7 @@ async function showSplashScreen() {
 
 async function hideSplashScreen() {
   splashScreen.style.opacity = "0"
-  setTimeout(() => splashScreen.remove(), 1000)
+  setTimeout(() => splashScreen.remove(), 250)
   notify("🦇｜Khan Destroyer v2.7 ativado com sucesso!", 4000)
 }
 
